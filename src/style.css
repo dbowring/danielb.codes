@@ -1,0 +1,89 @@
+* {
+  margin: 0;
+  padding: 0;
+  font-size: 18px;
+}
+body {
+  background: #272822;
+  color: #f8f8f2;
+  font-family: monospace;
+}
+h1 {
+  color: #f92672;
+}
+h1:before {
+  content: "{ ";
+  color: #f8f8f2;
+}
+h1:after {
+  content: " };";
+  color: #f8f8f2;
+}
+a {
+  color: #66d9ef;
+  text-decoration: none;
+}
+a:hover {
+  color: #a6e22e;
+}
+.bordered:before,
+.bordered:after {
+  content: "/* ************************************************************************* */";
+  display: block;
+  color: #75715e;
+}
+.wrapper {
+  text-align: left;
+  width: 80ex;
+  margin: 0 auto;
+}
+.nav {
+  list-style: none;
+}
+.nav:after {
+  content: "// ----------------------------------------------------------------------------";
+  display: block;
+  color: #75715e;
+}
+.nav .item {
+  display: inline;
+}
+.nav .item:first-child:before {
+  content: "( ";
+}
+.nav .item:last-child:after {
+  content: " );";
+}
+.nav .item:after {
+  content: ", ";
+}
+.content {
+  padding-top: 1em;
+}
+.content ul {
+  list-style: none;
+}
+.content .title:before {
+  content: "[ ";
+}
+.content .title:after {
+  content: " ]";
+}
+.console-width {
+  width: 869px;
+  width: 80ch;
+}
+.copyright:before {
+  content: "// ----------------------------------------------------------------------------";
+  display: block;
+  color: #75715e;
+}
+.copyright {
+  margin-top: 1em;
+}
+.copyright .notice {
+  color: #ae81ff;
+}
+.arrow-list li:before {
+  content: "> ";
+}
