@@ -1,4 +1,4 @@
-FROM nginxinc/nginx-unprivileged:1.26-alpine
+FROM nginxinc/nginx-unprivileged:1.27-alpine
 
 RUN rm /etc/nginx/conf.d/default.conf
 COPY danielb.codes.conf /etc/nginx/conf.d/
