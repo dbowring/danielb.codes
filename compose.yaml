@@ -1,0 +1,83 @@
+services:
+  traefik:
+    image: "traefik:v3.3.5"
+    container_name: "traefik"
+    restart: always
+    env_file:
+      - linode.env
+    command:
+      - "--api.insecure=false"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.danielb-codes.acme.dnschallenge=true"
+      - "--certificatesresolvers.danielb-codes.acme.dnschallenge.provider=linode"
+      - "--certificatesresolvers.danielb-codes.acme.email=letsencrypt@daniel.bowring.email"
+      - "--certificatesresolvers.danielb-codes.acme.storage=/letsencrypt/danielb-codes-acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "./mounts/letsencrypt:/letsencrypt"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./mounts/dashboard-data:/dashboard-data"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.danielb.codes`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.routers.dashboard.tls.certresolver=danielb-codes"
+      - "traefik.http.routers.dashboard.tls.domains[0].main=traefik.danielb.codes"
+      - "traefik.http.middlewares.dashboard-auth.basicauth.usersfile=/dashboard-data/users.basicauth"
+      - "traefik.http.routers.dashboard.middlewares=dashboard-auth"
+      # Middleware for `(www.)?danielb.codes`
+      - "traefik.http.middlewares.dropwww.redirectregex.regex=^https://www.danielb.codes/(.*)"
+      - "traefik.http.middlewares.dropwww.redirectregex.replacement=https://danielb.codes/$${1}"
+      - "traefik.http.middlewares.dropwww.redirectregex.permanent=true"
+      # Not using `redirectscheme` middleware because I also want to drop the `www`
+      - "traefik.http.middlewares.promotehttps.redirectregex.regex=^http://(www.)?danielb.codes/(.*)"
+      - "traefik.http.middlewares.promotehttps.redirectregex.replacement=https://danielb.codes/$${2}"
+      - "traefik.http.middlewares.promotehttps.redirectregex.permanent=true"
+
+  danielb-codes:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    labels:
+      - "traefik.enable=true"
+      # https
+      - "traefik.http.routers.danielb-codes.rule=Host(`danielb.codes`) || Host(`www.danielb.codes`)"
+      - "traefik.http.routers.danielb-codes.entrypoints=websecure"
+      - "traefik.http.routers.danielb-codes.tls=true"
+      - "traefik.http.routers.danielb-codes.tls.certresolver=danielb-codes"
+      - "traefik.http.routers.danielb-codes.tls.domains[0].main=danielb.codes"
+      - "traefik.http.routers.danielb-codes.tls.domains[1].sans=*.danielb.codes"
+      - "traefik.http.routers.danielb-codes.middlewares=dropwww"
+      # http
+      - "traefik.http.routers.danielb-codes-insecure.rule=Host(`danielb.codes`) || Host(`www.danielb.codes`)"
+      - "traefik.http.routers.danielb-codes-insecure.entrypoints=web"
+      - "traefik.http.routers.danielb-codes-insecure.middlewares=promotehttps"
+
+  public:
+    image: nginxinc/nginx-unprivileged:1.27-alpine
+    restart: always
+    volumes:
+      - "~/public:/usr/share/nginx/html/public:ro"
+    labels:
+      - "traefik.enable=true"
+      # https
+      - "traefik.http.routers.public.rule=(Host(`danielb.codes`) || Host(`www.danielb.codes`)) && PathPrefix(`/public/`)"
+      - "traefik.http.routers.public.entrypoints=websecure"
+      - "traefik.http.routers.public.tls=true"
+      - "traefik.http.routers.public.tls.certresolver=danielb-codes"
+      - "traefik.http.routers.public.tls.domains[0].main=danielb.codes"
+      - "traefik.http.routers.public.tls.domains[1].sans=*.danielb.codes"
+      - "traefik.http.routers.public.middlewares=dropwww"
+      # http
+      - "traefik.http.routers.public-insecure.rule=(Host(`danielb.codes`) || Host(`www.danielb.codes`)) && PathPrefix(`/public/`)"
+      - "traefik.http.routers.public-insecure.entrypoints=web"
+      - "traefik.http.routers.public-insecure.middlewares=promotehttps"
