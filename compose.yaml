@@ -1,6 +1,9 @@
 services:
   traefik:
-    image: "traefik:v3.3.5"
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base-traefik
     container_name: "traefik"
     restart: always
     env_file:
@@ -47,6 +50,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: app
     labels:
       - "traefik.enable=true"
       # https
@@ -63,8 +67,11 @@ services:
       - "traefik.http.routers.danielb-codes-insecure.middlewares=promotehttps"
 
   public:
-    image: nginxinc/nginx-unprivileged:1.27-alpine
     restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base-nginx
     volumes:
       - "~/public:/usr/share/nginx/html/public:ro"
     labels:
