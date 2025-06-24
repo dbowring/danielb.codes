@@ -44,6 +44,8 @@ services:
       - "traefik.http.middlewares.promotehttps.redirectregex.regex=^http://(www.)?danielb.codes/(.*)"
       - "traefik.http.middlewares.promotehttps.redirectregex.replacement=https://danielb.codes/$${2}"
       - "traefik.http.middlewares.promotehttps.redirectregex.permanent=true"
+      # HTTP basic auth
+      - "traefik.http.middlewares.basic-auth.basicauth.users=${HTTP_BASIC_AUTH}"
 
   danielb-codes:
     restart: always
@@ -88,3 +90,26 @@ services:
       - "traefik.http.routers.public-insecure.rule=(Host(`danielb.codes`) || Host(`www.danielb.codes`)) && PathPrefix(`/public/`)"
       - "traefik.http.routers.public-insecure.entrypoints=web"
       - "traefik.http.routers.public-insecure.middlewares=promotehttps"
+
+  webdav:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: webdav
+    volumes:
+      - "~/public:/webdav:ro"
+    labels:
+      - "traefik.enable=true"
+      # https
+      - "traefik.http.routers.webdav.rule=(Host(`danielb.codes`) || Host(`www.danielb.codes`)) && PathPrefix(`/webdav/`)"
+      - "traefik.http.routers.webdav.entrypoints=websecure"
+      - "traefik.http.routers.webdav.tls=true"
+      - "traefik.http.routers.webdav.tls.certresolver=danielb-codes"
+      - "traefik.http.routers.webdav.tls.domains[0].main=danielb.codes"
+      - "traefik.http.routers.webdav.tls.domains[1].sans=*.danielb.codes"
+      - "traefik.http.routers.webdav.middlewares=dropwww,basic-auth"
+      # http
+      - "traefik.http.routers.webdav-insecure.rule=(Host(`danielb.codes`) || Host(`www.danielb.codes`)) && PathPrefix(`/webdav/`)"
+      - "traefik.http.routers.webdav-insecure.entrypoints=web"
+      - "traefik.http.routers.webdav-insecure.middlewares=promotehttps"
