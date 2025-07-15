@@ -14,7 +14,10 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
+      - "--entryPoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entryPoints.web.http.redirections.entryPoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.metrics.address=:9090"
       - "--certificatesresolvers.danielb-codes.acme.dnschallenge=true"
       - "--certificatesresolvers.danielb-codes.acme.dnschallenge.provider=linode"
       - "--certificatesresolvers.danielb-codes.acme.email=letsencrypt@daniel.bowring.email"
@@ -22,6 +25,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "9090:9090"
     volumes:
       - "./mounts/letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
@@ -113,3 +117,35 @@ services:
       - "traefik.http.routers.webdav-insecure.rule=(Host(`danielb.codes`) || Host(`www.danielb.codes`)) && PathPrefix(`/webdav/`)"
       - "traefik.http.routers.webdav-insecure.entrypoints=web"
       - "traefik.http.routers.webdav-insecure.middlewares=promotehttps"
+
+  headscale:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: headscale
+    volumes:
+      - ./mounts/headscale/config:/etc/headscale:ro
+      - ./mounts/headscale/lib:/var/lib/headscale
+      - ./mounts/headscale/run:/var/run/headscale
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.services.headscale.loadbalancer.server.port=8080"
+      - "traefik.http.routers.headscale.rule=Host(`headscale.danielb.codes`)"
+      - "traefik.http.routers.headscale.service=headscale"
+      - "traefik.http.routers.headscale.entrypoints=websecure"
+      - "traefik.http.routers.headscale.tls=true"
+      - "traefik.http.routers.headscale.tls.certresolver=danielb-codes"
+
+      - "traefik.http.routers.headscale-insecure.rule=Host(`headscale.danielb.codes`)"
+      - "traefik.http.routers.headscale-insecure.service=headscale"
+      - "traefik.http.routers.headscale-insecure.entrypoints=web"
+
+      - "traefik.http.services.headscale-metrics.loadbalancer.server.port=9090"
+      - "traefik.http.routers.headscale-metrics.rule=Host(`headscale.danielb.codes`)"
+      - "traefik.http.routers.headscale-metrics.service=headscale-metrics"
+      - "traefik.http.routers.headscale-metrics.entrypoints=metrics"
+      - "traefik.http.routers.headscale-metrics.tls=true"
+      - "traefik.http.routers.headscale-metrics.tls.certresolver=danielb-codes"
+      - "traefik.http.routers.headscale-metrics.middlewares=basic-auth"
