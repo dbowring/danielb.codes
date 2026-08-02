@@ -1,12 +1,14 @@
-ARG TRAEFIK_RELEASE=v3.7.6
-ARG NGINX_RELEASE=1.31.2-alpine
-ARG RCLONE_RELEASE=1.74.3
-ARG HEADSCALE_RELEASE=v0.29.1
+ARG TRAEFIK_RELEASE=v3.7.10
+ARG NGINX_RELEASE=1.31.3-alpine
+ARG RCLONE_RELEASE=1.75.0
+ARG HEADSCALE_RELEASE=v0.29.3
+ARG RUSTDESK_SERVER_RELEASE=1.1.16
 
 FROM traefik:${TRAEFIK_RELEASE} AS base-traefik
 FROM nginxinc/nginx-unprivileged:${NGINX_RELEASE} AS base-nginx
 FROM rclone/rclone:${RCLONE_RELEASE} AS base-rclone
 FROM headscale/headscale:${HEADSCALE_RELEASE} AS base-headscale
+FROM rustdesk/rustdesk-server:${RUSTDESK_SERVER_RELEASE} AS rustdesk-server
 
 FROM base-rclone AS webdav
 

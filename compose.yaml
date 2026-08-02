@@ -149,3 +149,31 @@ services:
       - "traefik.http.routers.headscale-metrics.tls=true"
       - "traefik.http.routers.headscale-metrics.tls.certresolver=danielb-codes"
       - "traefik.http.routers.headscale-metrics.middlewares=basic-auth"
+
+  hbbs:
+    container_name: hbbs
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: rustdesk-server
+    # image: rustdesk/rustdesk-server:latest
+    command: hbbs
+    volumes:
+      - ./mounts/rustdesk:/root
+    network_mode: "host"
+
+    depends_on:
+      - hbbr
+    restart: unless-stopped
+
+  hbbr:
+    container_name: hbbr
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: rustdesk-server
+    command: hbbr
+    volumes:
+      - ./mounts/rustdesk:/root
+    network_mode: "host"
+    restart: unless-stopped
